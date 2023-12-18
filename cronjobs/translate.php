@@ -4,14 +4,14 @@
 
 /** @var eZCLI $cli */
 
-if (!$isQuiet) {
-    $cli->output("Processing pending translation actions");
-}
-
 $limit = 50;
 $entries = eZPendingActions::fetchByAction(TranslatorManager::PENDING_ACTION);
 
 if (!empty($entries)) {
+    if (!$isQuiet) {
+        $count = count($entries);
+        $cli->output("Processing $count pending translation actions");
+    }
     foreach ($entries as $entry) {
         $params = $entry->attribute('param');
         $decodedParams = json_decode($params, true);
@@ -34,7 +34,6 @@ if (!empty($entries)) {
                         )
                     );
                 }
-
                 try {
                     TranslatorManager::instance()->createAndPublishTranslation(
                         $object,

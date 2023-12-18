@@ -32,6 +32,11 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface
                     "title" => "Account usage",
                     "readonly" => true,
                 ],
+                "pending" => [
+                    "type" => "string",
+                    "title" => "Pending translations",
+                    "readonly" => true,
+                ],
             ],
         ];
     }
@@ -46,6 +51,7 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface
         }catch (Throwable $e){
             $settings['usage'] = (string)$e->getMessage();
         }
+        $settings['pending'] = TranslatorManager::instance()->countPendingActions();
         return $settings;
     }
 

@@ -68,7 +68,44 @@ class TranslatorManager
         return false;
     }
 
-    public function appendPendingAction(
+    public function addPendingTranslations(eZContentObject $object)
+    {
+        $initialLanguageID = $object->attribute('initial_language_id');
+        $language = eZContentLanguage::fetch($initialLanguageID);
+        if ($language) {
+            $sourceLanguage = $language->attribute('locale');
+            /** @var eZContentLanguage[] $languages */
+            $languages = eZContentLanguage::fetchList();
+            $availableLanguages = $object->availableLanguages();
+            foreach ($languages as $language) {
+                $targetLanguage = $language->attribute('locale');
+                if ($sourceLanguage !== $targetLanguage) {
+                    $translationAlreadyExits = in_array($targetLanguage, $availableLanguages);
+                    if (!$translationAlreadyExits) {
+                        $this->appendPendingAction(
+                            $object,
+                            $sourceLanguage,
+                            $targetLanguage
+                        );
+                    }
+                }
+            }
+        } else {
+            eZDebug::writeError(sprintf('Language id %s not found', $initialLanguageID), __METHOD__);
+        }
+    }
+
+    public function countPendingActions(): int
+    {
+        return (int)eZPendingActions::count(
+            eZPendingActions::definition(),
+            [
+                'action' => self::PENDING_ACTION,
+            ]
+        );
+    }
+
+    private function appendPendingAction(
         eZContentObject $object,
         string $sourceLanguage,
         string $targetLanguage
