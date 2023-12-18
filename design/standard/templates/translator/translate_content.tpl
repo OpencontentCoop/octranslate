@@ -13,7 +13,7 @@
         {else}
         <form method="post" action="{concat('translate/content/', $object.id, '/', $from_language.locale, '/', $to_language.locale)|ezurl(no)}">
         {if $already_exists}
-            <h3>{'An %locale% translation already exists for the selected content'|i18n( 'octranslate', , hash('%locale%', $to_language.name) )}</h3>
+            <h3>{'A %locale% translation already exists for the selected content'|i18n( 'octranslate', , hash('%locale%', $to_language.name) )}</h3>
             <p class="lead">{$object.name|wash()}</p>
             <div class="form-check">
                 <input name="ModifyTranslation" value="manual" type="radio" id="ModifyTranslation" checked>
