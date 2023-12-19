@@ -10,6 +10,8 @@ interface TranslatorHandlerInterface
 
     public function storeSettings(array $settings): void;
 
+    public function deleteSettings(): void;
+
     public function translate(array $text, string $sourceLanguage, string $targetLanguage, array $options = []): array;
 
     public function isAllowedLanguage(string $languageCode): bool;

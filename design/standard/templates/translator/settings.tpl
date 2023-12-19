@@ -4,7 +4,6 @@
     'alpaca.js',
     'jquery.opendataform.js'
 ))}
-{ezcss_require(array('alpaca-custom.css'))}
 
 <div class="row">
     <div class="col-12">

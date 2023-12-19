@@ -18,8 +18,7 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHa
             "properties" => [
                 "key" => [
                     "type" => "string",
-                    "title" => "Auth key",
-                    "required" => true,
+                    "title" => "Authentication key (from https://www.deepl.com/it/account/summary)",
                 ],
 //                "env" => [
 //                    "type" => "string",
@@ -58,7 +57,18 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHa
 
     public function storeSettings(array $settings): void
     {
-        $this->setStorage('deepl_settings', json_encode($settings));
+        unset($settings['usage']);
+        unset($settings['pending']);
+        if (empty($settings['key'])){
+            $this->deleteSettings();
+        }else {
+            $this->setStorage('deepl_settings', json_encode($settings));
+        }
+    }
+
+    public function deleteSettings(): void
+    {
+        $this->removeStorage('deepl_settings');
     }
 
     public function translate(array $text, string $sourceLanguage, string $targetLanguage, array $options = []): array
@@ -73,7 +83,7 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHa
 
         $translationResult = $this->getTranslator($this->getSettings()['key'])->translateText(
             $text,
-            $this->mapLanguage($sourceLanguage),
+            $this->mapLanguage($sourceLanguage, true),
             $this->mapLanguage($targetLanguage),
             $handlerOptions
         );
@@ -106,7 +116,7 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHa
                         $status = $this->getTranslator($this->getSettings()['key'])->translateDocument(
                             $inputFilePath,
                             $outputFilePath,
-                            $this->mapLanguage($sourceLanguage),
+                            $this->mapLanguage($sourceLanguage, true),
                             $this->mapLanguage($targetLanguage)
                         );
                         if ($status->errorMessage) {
@@ -141,7 +151,7 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHa
         }
     }
 
-    private function mapLanguage($languageCode): string
+    private function mapLanguage($languageCode, $asSourceLanguage = false): string
     {
         $map = [
 //            '?' => 'bg',
@@ -178,6 +188,11 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHa
 
         if (!isset($map[$languageCode])) {
             throw new RuntimeException("Language $languageCode not found in translator engine");
+        }
+
+        if ($asSourceLanguage){
+            $language = explode('-', $map[$languageCode]);
+            return $language[0];
         }
 
         return $map[$languageCode];

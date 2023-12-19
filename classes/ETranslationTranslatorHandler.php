@@ -16,6 +16,10 @@ class ETranslationTranslatorHandler implements TranslatorHandlerInterface
     {
     }
 
+    public function deleteSettings(): void
+    {
+    }
+
     public function translate(array $text, string $sourceLanguage, string $targetLanguage, array $options = []): array
     {
         return [];
