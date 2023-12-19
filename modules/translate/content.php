@@ -28,7 +28,7 @@ if (!$object->canEdit() || !$object->canTranslate()) {
     return $module->handleError(eZError::KERNEL_ACCESS_DENIED, 'kernel');
 }
 
-if ($http->hasPostVariable('Cancel')){
+if ($http->hasPostVariable('Cancel')) {
     /** @var eZContentObjectTreeNode $mainNode */
     $mainNode = $object->mainNode();
     $module->redirectTo($mainNode->attribute('url_alias'));
@@ -36,10 +36,14 @@ if ($http->hasPostVariable('Cancel')){
 }
 
 $translationAlreadyExits = in_array($targetLanguage, $object->availableLanguages());
+$translator = TranslatorManager::instance();
 
 $error = false;
 try {
     if ($http->hasPostVariable('Translate')) {
+        if ($http->hasPostVariable('TranslateDocuments')){
+            $translator->setIsDocumentTranslationEnabled(true);
+        }
         $createDraft = false;
         if ($http->hasPostVariable('ModifyTranslation') && $translationAlreadyExits) {
             $createDraft = $http->postVariable('ModifyTranslation') === 'auto';
@@ -50,14 +54,14 @@ try {
         } elseif ($http->hasPostVariable('CreateTranslation') && !$translationAlreadyExits) {
             $createDraft = $http->postVariable('CreateTranslation') === 'draft';
             if (!$createDraft) {
-                if (TranslatorManager::instance()->createAndPublishTranslation(
+                if ($translator->createAndPublishTranslation(
                     $object,
                     $sourceLanguage,
                     $targetLanguage
                 )) {
                     /** @var eZContentObjectTreeNode $mainNode */
                     $mainNode = $object->mainNode();
-                    $module->redirectTo($mainNode->attribute('url_alias') . '/(language)/' . $targetLanguage);
+                    $module->redirectTo(TranslatorManager::getLocaleUrl($mainNode, $targetLanguage));
                     return;
                 } else {
                     return $module->handleError(eZError::KERNEL_NOT_AVAILABLE, 'kernel');
@@ -65,16 +69,17 @@ try {
             }
         }
         if ($createDraft) {
-            $version = TranslatorManager::instance()->createTranslation($object, $sourceLanguage, $targetLanguage);
+            $version = $translator->createTranslation($object, $sourceLanguage, $targetLanguage);
             $module->redirectTo(
-                'content/edit/' . $object->attribute('id') . '/' . $version->attribute(
-                    'version'
-                ) . '/' . $targetLanguage . '/' . $sourceLanguage
+                'content/edit/' . $object->attribute('id')
+                . '/' . $version->attribute('version')
+                . '/' . $targetLanguage
+                . '/' . $sourceLanguage
             );
             return;
         }
     }
-}catch (Throwable $e){
+} catch (Throwable $e) {
     $error = $e->getMessage();
 }
 
@@ -83,6 +88,7 @@ $tpl->setVariable('already_exists', $translationAlreadyExits);
 $tpl->setVariable('from_language', $sourceContentLanguage);
 $tpl->setVariable('to_language', $targetContentLanguage);
 $tpl->setVariable('object', $object);
+$tpl->setVariable('can_translate_document', $translator->getHandler() instanceof TranslatorHandlerDocumentCapable);
 
 $Result = [];
 $Result['content'] = $tpl->fetch('design:translator/translate_content.tpl');

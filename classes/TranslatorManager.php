@@ -11,9 +11,12 @@ class TranslatorManager
      */
     private $handler;
 
+    private $isDocumentTranslationEnabled;
+
     private function __construct()
     {
         $this->handler = new DeeplTranslatorHandler();
+        $this->isDocumentTranslationEnabled = false;
     }
 
     public static function instance(): TranslatorManager
@@ -28,6 +31,11 @@ class TranslatorManager
     public function getHandler(): TranslatorHandlerInterface
     {
         return $this->handler;
+    }
+
+    public function setIsDocumentTranslationEnabled(bool $isDocumentTranslationEnabled): void
+    {
+        $this->isDocumentTranslationEnabled = $isDocumentTranslationEnabled;
     }
 
     public function createTranslation(
@@ -155,6 +163,9 @@ class TranslatorManager
         return $languageCode !== 'ita-PA' && $this->getHandler()->isAllowedLanguage($languageCode);
     }
 
+    /**
+     * @throws Throwable
+     */
     private static function createNewVersion(
         eZContentObject $object,
         string $languageCode,
@@ -164,27 +175,30 @@ class TranslatorManager
         $db->begin();
 
         $newVersion = $object->createNewVersion(false, true, $languageCode);
-
-        if (!$newVersion instanceof eZContentObjectVersion) {
-            $db->rollback();
-            throw new RuntimeException('Unable to create a new version for object ' . $object->attribute('id'));
-        }
-
-        $newVersion->setAttribute('modified', time());
-        $newVersion->store();
-
-        $attributeList = $newVersion->attribute('contentobject_attributes');
-        foreach ($attributeList as $attribute) {
-            $attributeIdentifier = $attribute->attribute('contentclass_attribute_identifier');
-            if (array_key_exists($attributeIdentifier, $attributesData)) {
-                $dataString = $attributesData[$attributeIdentifier];
-                $attribute->fromString($dataString);
-                $attribute->store();
+        try {
+            if (!$newVersion instanceof eZContentObjectVersion) {
+                $db->rollback();
+                throw new RuntimeException('Unable to create a new version for object ' . $object->attribute('id'));
             }
-        }
-        $db->commit();
 
-        return $newVersion;
+            $newVersion->setAttribute('modified', time());
+            $newVersion->store();
+
+            $attributeList = $newVersion->attribute('contentobject_attributes');
+            foreach ($attributeList as $attribute) {
+                $attributeIdentifier = $attribute->attribute('contentclass_attribute_identifier');
+                if (array_key_exists($attributeIdentifier, $attributesData)) {
+                    $dataString = $attributesData[$attributeIdentifier];
+                    $attribute->fromString($dataString);
+                    $attribute->store();
+                }
+            }
+            $db->commit();
+            return $newVersion;
+        } catch (Throwable $e) {
+            $db->rollback();
+            throw $e;
+        }
     }
 
     private function translateDataMap(eZContentObject $object, string $sourceLanguage, string $targetLanguage): array
@@ -212,6 +226,7 @@ class TranslatorManager
             'string' => [],
             'xml' => [],
             'url' => [],
+            'file' => [],
             'relation' => [],
         ];
         $untranslated = [];
@@ -223,32 +238,32 @@ class TranslatorManager
                 continue;
             }
             switch ($attribute->attribute('data_type_string')) {
-                case 'ezstring':
-                case 'eztext';
+                case eZStringType::DATA_TYPE_STRING:
+                case eZTextType::DATA_TYPE_STRING:
                     $toTranslate['string'][$identifier] = $attribute->toString();
                     break;
 
-                case 'ezmatrix';
-                case 'ezxmltext';
+                case eZMatrixType::DATA_TYPE_STRING:
+                case eZXMLTextType::DATA_TYPE_STRING:
                     $toTranslate['xml'][$identifier] = $attribute->toString();
                     break;
 
-                case 'ezurl':
+                case eZURLType::DATA_TYPE_STRING:
                     $label = $attribute->attribute('data_text');
                     if (!empty($label)) {
                         $toTranslate['url'][$identifier] = $label;
                     }
                     break;
 
-                case 'ezobjectrelation':
-                case 'ezobjectrelationlist':
+                case eZObjectRelationType::DATA_TYPE_STRING:
+                case eZObjectRelationListType::DATA_TYPE_STRING:
                     foreach (explode('-', $attribute->toString()) as $relationId) {
                         $toTranslate['relation'][$identifier][] = $relationId;
                         $toTranslate['relation'][$identifier] = array_unique($toTranslate['relation'][$identifier]);
                     }
                     break;
 
-                case 'eztags':
+                case eZTagsType::DATA_TYPE_STRING:
                     $tags = eZTags::createFromAttribute($attribute, $targetLanguage);
                     $returnArray = [];
                     $returnArray[] = $tags->attribute('id_string');
@@ -256,6 +271,22 @@ class TranslatorManager
                     $returnArray[] = $tags->attribute('parent_string');
                     $returnArray[] = $tags->attribute('locale_string');
                     $untranslated[$identifier] = implode('|#', $returnArray);
+                    break;
+
+                case eZBinaryFileType::DATA_TYPE_STRING:
+                    $file = $attribute->content();
+                    if ($file instanceof eZBinaryFile) {
+                        $toTranslate['file'][$identifier][] = $file;
+                    }
+                    break;
+
+                case OCMultiBinaryType::DATA_TYPE_STRING:
+                    $files = $attribute->content();
+                    foreach ($files as $file) {
+                        if ($file instanceof eZBinaryFile) {
+                            $toTranslate['file'][$identifier][] = $file;
+                        }
+                    }
                     break;
 
                 default:
@@ -287,10 +318,23 @@ class TranslatorManager
                 $targetLanguage
             );
         }
+        if ($this->canTranslateDocument()) {
+            $translated['file'] = $this->getHandler()->translateDocument(
+                array_values($toTranslate['file']),
+                $sourceLanguage,
+                $targetLanguage
+            );
+        }else{
+            $translated['file'] = $this->copyDocument(
+                array_values($toTranslate['file']),
+                $targetLanguage
+            );
+        }
 
         $translated['string'][-1] = '?';
         $translated['xml'][-1] = '?';
         $translated['url'][-1] = '?';
+        $translated['file'][-1] = '?';
 
         $translatedDataMap = [];
         foreach ($dataMap as $identifier => $attribute) {
@@ -303,19 +347,19 @@ class TranslatorManager
                 continue;
             }
             switch ($attribute->attribute('data_type_string')) {
-                case 'ezstring':
-                case 'eztext';
+                case eZStringType::DATA_TYPE_STRING:
+                case eZTextType::DATA_TYPE_STRING:
                     $key = $this->getKeyIndex($identifier, $toTranslate['string']);
                     $translatedDataMap[$identifier] = (string)$translated['string'][$key];
                     break;
 
-                case 'ezmatrix';
-                case 'ezxmltext';
+                case eZMatrixType::DATA_TYPE_STRING:
+                case eZXMLTextType::DATA_TYPE_STRING:
                     $key = $this->getKeyIndex($identifier, $toTranslate['xml']);
                     $translatedDataMap[$identifier] = (string)$translated['xml'][$key];
                     break;
 
-                case 'ezurl':
+                case eZURLType::DATA_TYPE_STRING:
                     $value = $attribute->toString();
                     $parts = explode('|', $value);
                     $label = '';
@@ -326,9 +370,19 @@ class TranslatorManager
                     $translatedDataMap[$identifier] = $parts[0] . $label;
                     break;
 
-                case 'ezobjectrelation':
-                case 'ezobjectrelationlist':
+                case eZObjectRelationType::DATA_TYPE_STRING:
+                case eZObjectRelationListType::DATA_TYPE_STRING:
                     $translatedDataMap[$identifier] = implode('-', $toTranslate['relation'][$identifier]);
+                    break;
+
+                case eZBinaryFileType::DATA_TYPE_STRING:
+                    $key = $this->getKeyIndex($identifier, $toTranslate['file']);
+                    $translatedDataMap[$identifier] = (string)$translated['file'][$key][0];
+                    break;
+
+                case OCMultiBinaryType::DATA_TYPE_STRING:
+                    $key = $this->getKeyIndex($identifier, $toTranslate['file']);
+                    $translatedDataMap[$identifier] = implode('|', $translated['file'][$key]);
                     break;
 
                 default:
@@ -337,6 +391,45 @@ class TranslatorManager
         }
 
         return $translatedDataMap;
+    }
+
+    private function copyDocument(
+        array $inputFiles,
+        string $targetLanguage
+    ): array {
+        $data = [];
+        foreach ($inputFiles as $index => $files) {
+            foreach ($files as $file) {
+                $filename = $file->attribute('original_filename');
+                $inputFilePath = $file->filePath();
+                eZClusterFileHandler::instance($inputFilePath)->fetch();
+                $outputFilePath = self::tempDir($file, $targetLanguage) . $filename;
+                if (!file_exists($outputFilePath)) {
+                    eZFileHandler::copy($inputFilePath, $outputFilePath);
+                }
+                $data[$index][] = realpath($outputFilePath);
+            }
+        }
+        return $data;
+    }
+
+    public static function tempDir(eZBinaryFile $file, $targetLang)
+    {
+        $path = eZDir::path([
+            eZSys::cacheDirectory(),
+            'tmp',
+            $file->attribute('contentobject_attribute_id'),
+            $file->attribute('version'),
+            $targetLang,
+        ], true);
+        eZDir::mkdir($path, false, true);
+
+        return $path;
+    }
+
+    public function canTranslateDocument(): bool
+    {
+        return $this->getHandler() instanceof TranslatorHandlerDocumentCapable && $this->isDocumentTranslationEnabled;
     }
 
     private function getKeyIndex(string $needle, array $haystack)
@@ -351,4 +444,32 @@ class TranslatorManager
 
         return -1;
     }
+
+    public static function getLocaleUrl(eZContentObjectTreeNode $node, $language): string
+    {
+        $url = $node->attribute('url_alias') . '/(language)/' . $language;
+        $ini = eZINI::instance();
+        if ($ini->hasVariable('RegionalSettings', 'LanguageSwitcherClass')) {
+            $className = $ini->variable('RegionalSettings', 'LanguageSwitcherClass');
+
+            $saList = call_user_func([$className, 'setupTranslationSAList']);
+
+            foreach ($saList as $destinationSiteAccess => $sa) {
+                if ($sa['locale'] === $language) {
+                    $handlerOptions = new ezpExtensionOptions();
+                    $handlerOptions->iniFile = 'site.ini';
+                    $handlerOptions->iniSection = 'RegionalSettings';
+                    $handlerOptions->iniVariable = 'LanguageSwitcherClass';
+                    $langSwitch = eZExtension::getHandlerClass($handlerOptions);
+                    $langSwitch->setDestinationSiteAccess($destinationSiteAccess);
+                    $langSwitch->process();
+                    $destinationUrl = $langSwitch->destinationUrl();
+                    $url = rtrim($destinationUrl, '/') . '/openpa/object/' . $node->attribute('contentobject_id');
+                }
+            }
+        }
+
+        return $url;
+    }
+
 }

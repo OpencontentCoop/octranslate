@@ -1,9 +1,10 @@
 <?php
 
+use DeepL\DocumentTranslationException;
 use DeepL\TranslateTextOptions;
 use DeepL\Translator;
 
-class DeeplTranslatorHandler implements TranslatorHandlerInterface
+class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHandlerDocumentCapable
 {
     use SiteDataStorageTrait;
 
@@ -48,7 +49,7 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface
             if ($settings['key']) {
                 $settings['usage'] = (string)$this->getTranslator($settings['key'])->getUsage();
             }
-        }catch (Throwable $e){
+        } catch (Throwable $e) {
             $settings['usage'] = (string)$e->getMessage();
         }
         $settings['pending'] = TranslatorManager::instance()->countPendingActions();
@@ -69,6 +70,7 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface
                 TranslateTextOptions::SPLITTING_TAGS => 'paragraph,c',
             ];
         }
+
         $translationResult = $this->getTranslator($this->getSettings()['key'])->translateText(
             $text,
             $this->mapLanguage($sourceLanguage),
@@ -77,6 +79,47 @@ class DeeplTranslatorHandler implements TranslatorHandlerInterface
         );
 
         return (array)$translationResult;
+    }
+
+    /**
+     * @param array<int, eZBinaryFile[]> $inputFiles
+     * @param ?string $sourceLanguage
+     * @param string $targetLanguage
+     * @param array $options
+     * @return array<int, string[]>
+     */
+    public function translateDocument(
+        array $inputFiles,
+        ?string $sourceLanguage,
+        string $targetLanguage,
+        array $options = []
+    ): array {
+        $data = [];
+        foreach ($inputFiles as $index => $files) {
+            foreach ($files as $file) {
+                $filename = $file->attribute('original_filename');
+                $inputFilePath = $file->filePath();
+                eZClusterFileHandler::instance($inputFilePath)->fetch();
+                $outputFilePath = TranslatorManager::tempDir($file, $targetLanguage) . $targetLanguage . '_' . $filename;
+                if (!file_exists($outputFilePath)) {
+                    try {
+                        $status = $this->getTranslator($this->getSettings()['key'])->translateDocument(
+                            $inputFilePath,
+                            $outputFilePath,
+                            $this->mapLanguage($sourceLanguage),
+                            $this->mapLanguage($targetLanguage)
+                        );
+                        if ($status->errorMessage) {
+                            eZDebug::writeError($status->errorMessage, __METHOD__);
+                        }
+                    } catch (DocumentTranslationException $e) {
+                        eZDebug::writeError($e->getMessage(), __METHOD__);
+                    }
+                }
+                $data[$index][] = realpath($outputFilePath);
+            }
+        }
+        return $data;
     }
 
     private function getTranslator($authKey): Translator
