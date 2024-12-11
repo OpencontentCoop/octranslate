@@ -2,6 +2,11 @@
 
 class ModernMTTranslatorHandler implements TranslatorHandlerInterface
 {
+    public function getIdentifier(): string
+    {
+        return 'modernmtt';
+    }
+
     public function getSettingsSchema(): array
     {
         return [];

@@ -4,6 +4,8 @@ interface TranslatorHandlerInterface
 {
     const TRANSLATE_FROM_EZ_XML = 'xml';
 
+    public function getIdentifier() :string;
+
     public function getSettingsSchema(): array;
 
     public function getSettings(): array;

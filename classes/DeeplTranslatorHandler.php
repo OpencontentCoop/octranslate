@@ -4,11 +4,16 @@ use DeepL\DocumentTranslationException;
 use DeepL\TranslateTextOptions;
 use DeepL\Translator;
 
-class DeeplTranslatorHandler implements TranslatorHandlerInterface, TranslatorHandlerDocumentCapable
+class DeeplTranslatorHandler implements TranslatorHandlerInterface /*, TranslatorHandlerDocumentCapable*/
 {
     use SiteDataStorageTrait;
 
     private $translator;
+
+    public function getIdentifier(): string
+    {
+        return 'deepl';
+    }
 
     public function getSettingsSchema(): array
     {

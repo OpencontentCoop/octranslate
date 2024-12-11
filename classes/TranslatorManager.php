@@ -4,6 +4,8 @@ class TranslatorManager
 {
     const PENDING_ACTION = 'octranslate';
 
+    const TRANSLATOR_USERNAME_PREFIX = 'octranslate-';
+
     private static $instance;
 
     /**
@@ -13,10 +15,13 @@ class TranslatorManager
 
     private $isDocumentTranslationEnabled;
 
+    private $defaultLanguage;
+
     private function __construct()
     {
         $this->handler = new DeeplTranslatorHandler();
         $this->isDocumentTranslationEnabled = false;
+        $this->defaultLanguage = 'ita-IT';
     }
 
     public static function instance(): TranslatorManager
@@ -43,7 +48,7 @@ class TranslatorManager
         string $sourceLanguage,
         string $targetLanguage
     ): eZContentObjectVersion {
-        $translatedDataMap = TranslatorManager::instance()->translateDataMap(
+        $translatedDataMap = $this->translateDataMap(
             $object,
             $sourceLanguage,
             $targetLanguage
@@ -57,17 +62,23 @@ class TranslatorManager
         string $sourceLanguage,
         string $targetLanguage
     ): bool {
-        $translatedDataMap = TranslatorManager::instance()->translateDataMap(
+        $translatedDataMap = $this->translateDataMap(
             $object,
             $sourceLanguage,
             $targetLanguage
         );
 
-        $newVersion = self::createNewVersion($object, $targetLanguage, $translatedDataMap);
+        $newVersion = self::createNewVersion(
+            $object,
+            $targetLanguage,
+            $translatedDataMap
+        );
         $operationResult = eZOperationHandler::execute('content', 'publish', [
             'object_id' => $newVersion->attribute('contentobject_id'),
             'version' => $newVersion->attribute('version'),
         ]);
+
+        $this->storeVersionTranslatedHash($newVersion, $targetLanguage);
 
         if ($operationResult['status'] == eZModuleOperationInfo::STATUS_CONTINUE) {
             return true;
@@ -324,7 +335,7 @@ class TranslatorManager
                 $sourceLanguage,
                 $targetLanguage
             );
-        }else{
+        } else {
             $translated['file'] = $this->copyDocument(
                 array_values($toTranslate['file']),
                 $targetLanguage
@@ -472,4 +483,48 @@ class TranslatorManager
         return $url;
     }
 
+    public function isAutoTranslated(eZContentObjectVersion $version, string $languageCode): bool
+    {
+        if ($languageCode === $this->defaultLanguage){
+            return false;
+        }
+        $hash = $this->createVersionHash($version, $languageCode);
+
+        $count = (int)eZCollaborationItem::count(eZCollaborationItem::definition(), [
+            'data_text1' => $languageCode,
+            'data_text2' => $hash,
+        ]);
+
+        return $count > 0;
+    }
+
+    private function storeVersionTranslatedHash(eZContentObjectVersion $version, string $languageCode)
+    {
+        $collaborationItem = eZCollaborationItem::create('octranslate', (int)eZUser::currentUserID());
+        $collaborationItem->setAttribute('data_int1', (int)$version->attribute('id'));
+        $collaborationItem->setAttribute('data_text1', $languageCode);
+        $collaborationItem->setAttribute('data_text2', $this->createVersionHash($version, $languageCode));
+        $collaborationItem->setAttribute('data_text3', $this->getHandler()->getIdentifier());
+        $collaborationItem->setAttribute('modified', time());
+        $collaborationItem->store();
+    }
+
+    private function createVersionHash(eZContentObjectVersion $version, string $languageCode): string
+    {
+        $attributes = $version->contentObjectAttributes($languageCode);
+        $serialized = [];
+        foreach ($attributes as $attribute) {
+            switch ($attribute->attribute('data_type_string')) {
+                case eZStringType::DATA_TYPE_STRING:
+                case eZTextType::DATA_TYPE_STRING:
+                case eZMatrixType::DATA_TYPE_STRING:
+                case eZXMLTextType::DATA_TYPE_STRING:
+                case eZURLType::DATA_TYPE_STRING:
+                $serialized[$attribute->attribute('contentclass_attribute_identifier')] = trim((string)$attribute->attribute('data_text'));
+                    break;
+            }
+        }
+        ksort($serialized);
+        return md5(json_encode($serialized));
+    }
 }

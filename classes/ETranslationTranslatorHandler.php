@@ -2,6 +2,11 @@
 
 class ETranslationTranslatorHandler implements TranslatorHandlerInterface
 {
+    public function getIdentifier(): string
+    {
+        return 'etranslation';
+    }
+
     public function getSettingsSchema(): array
     {
         return [];

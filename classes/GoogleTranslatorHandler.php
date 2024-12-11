@@ -2,6 +2,11 @@
 
 class GoogleTranslatorHandler implements TranslatorHandlerInterface
 {
+    public function getIdentifier(): string
+    {
+        return 'google';
+    }
+
     public function getSettingsSchema(): array
     {
         return [];
