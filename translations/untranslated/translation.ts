@@ -35,5 +35,9 @@
             <source>Translate attachments</source>
             <translation type="unfinished"/>
         </message>
+        <message>
+            <source>This content is translated with an automatic translation tool: the text may contain inaccurate information.</source>
+            <translation type="unfinished"/>
+        </message>
     </context>
 </TS>

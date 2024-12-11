@@ -36,5 +36,9 @@
             <source>Translate attachments</source>
             <translation>Traduci i file allegati</translation>
         </message>
+        <message>
+            <source>This content is translated with an automatic translation tool: the text may contain inaccurate information.</source>
+            <translation>Questo contenuto è tradotto con uno strumento di traduzione automatica: il testo potrebbe contenere informazioni imprecise.</translation>
+        </message>
     </context>
 </TS>
