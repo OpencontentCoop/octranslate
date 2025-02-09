@@ -20,6 +20,11 @@ $ViewList['settings'] = [
     'params' => [],
     'unordered_params' => [],
 ];
-
+$ViewList['set-mode'] = [
+    'functions' => ['translate'],
+    'script' => 'set-mode.php',
+    'params' => ['Action', 'Parameter'],
+    'unordered_params' => [],
+];
 $FunctionList['translate'] = [];
 $FunctionList['settings'] = [];

@@ -17,7 +17,8 @@ class TranslateType extends eZWorkflowEventType
         $parameters = $process->attribute('parameter_list');
         $objectID = $parameters['object_id'];
         $object = eZContentObject::fetch($objectID);
-        if ($object instanceof eZContentObject) {
+        if ($object instanceof eZContentObject
+            && in_array('translation/automatic', $object->attribute('state_identifier_array'))) {
             TranslatorManager::instance()->addPendingTranslations($object);
         }
 

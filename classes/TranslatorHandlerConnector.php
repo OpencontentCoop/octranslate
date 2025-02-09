@@ -16,12 +16,20 @@ class TranslatorHandlerConnector extends AbstractBaseConnector
 
     protected function getData()
     {
-        return TranslatorManager::instance()->getHandler()->getSettings();
+        $settings = TranslatorManager::instance()->getHandler()->getSettings();
+        $settings['_pending'] = TranslatorManager::instance()->countPendingActions();
+        return $settings;
     }
 
     protected function getSchema()
     {
-        return TranslatorManager::instance()->getHandler()->getSettingsSchema();
+        $schema = TranslatorManager::instance()->getHandler()->getSettingsSchema();
+        $schema['properties']['_pending'] = [
+            "type" => "string",
+            "title" => "Pending translations",
+            "readonly" => true,
+        ];
+        return $schema;
     }
 
     protected function getOptions()
@@ -31,7 +39,7 @@ class TranslatorHandlerConnector extends AbstractBaseConnector
                 'attributes' => [
                     'action' => $this->getHelper()->getServiceUrl('action', $this->getHelper()->getParameters()),
                     'method' => 'post',
-                    'enctype' => 'multipart/form-data'
+                    'enctype' => 'multipart/form-data',
                 ],
             ],
         ];
@@ -42,12 +50,13 @@ class TranslatorHandlerConnector extends AbstractBaseConnector
     {
         return [
             'parent' => 'bootstrap-edit',
-            'locale' => 'it_IT'
+            'locale' => 'it_IT',
         ];
     }
 
     protected function submit()
     {
+        unset($_POST['_pending']);
         TranslatorManager::instance()->getHandler()->storeSettings($_POST);
         return true;
     }

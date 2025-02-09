@@ -87,7 +87,7 @@ class TranslatorManager
         return false;
     }
 
-    public function addPendingTranslations(eZContentObject $object)
+    public function addPendingTranslations(eZContentObject $object, $skipAlreadyTranslated = true)
     {
         $initialLanguageID = $object->attribute('initial_language_id');
         $language = eZContentLanguage::fetch($initialLanguageID);
@@ -98,15 +98,14 @@ class TranslatorManager
             $availableLanguages = $object->availableLanguages();
             foreach ($languages as $language) {
                 $targetLanguage = $language->attribute('locale');
-                if ($sourceLanguage !== $targetLanguage) {
-                    $translationAlreadyExits = in_array($targetLanguage, $availableLanguages);
-                    if (!$translationAlreadyExits) {
-                        $this->appendPendingAction(
-                            $object,
-                            $sourceLanguage,
-                            $targetLanguage
-                        );
-                    }
+                $translationAlreadyExits = in_array($targetLanguage, $availableLanguages);
+                $skip = $skipAlreadyTranslated && $translationAlreadyExits;
+                if ($sourceLanguage !== $targetLanguage && !$skip) {
+                    $this->appendPendingAction(
+                        $object,
+                        $sourceLanguage,
+                        $targetLanguage
+                    );
                 }
             }
         } else {
@@ -485,7 +484,7 @@ class TranslatorManager
 
     public function isAutoTranslated(eZContentObjectVersion $version, string $languageCode): bool
     {
-        if ($languageCode === $this->defaultLanguage){
+        if ($languageCode === $this->defaultLanguage) {
             return false;
         }
         $hash = $this->createVersionHash($version, $languageCode);
@@ -520,7 +519,9 @@ class TranslatorManager
                 case eZMatrixType::DATA_TYPE_STRING:
                 case eZXMLTextType::DATA_TYPE_STRING:
                 case eZURLType::DATA_TYPE_STRING:
-                $serialized[$attribute->attribute('contentclass_attribute_identifier')] = trim((string)$attribute->attribute('data_text'));
+                    $serialized[$attribute->attribute('contentclass_attribute_identifier')] = trim(
+                        (string)$attribute->attribute('data_text')
+                    );
                     break;
             }
         }
