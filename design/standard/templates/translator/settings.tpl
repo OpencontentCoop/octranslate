@@ -28,4 +28,10 @@
         loadForm();
       });
     </script>
+    <style>
+        [data-alpaca-field-name="_auto_class_list"] > .form-check.alpaca-control{
+            display: inline-flex;
+            width: 24%;
+        }
+    </style>
 {/literal}

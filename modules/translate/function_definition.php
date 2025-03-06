@@ -25,6 +25,23 @@ $FunctionList['is_auto_translated'] = [
     ],
 ];
 
+$FunctionList['is_auto_translatable'] = [
+    'name' => 'is_auto_translatable',
+    'operation_types' => ['read'],
+    'call_method' => [
+        'class' => 'TranslateFunctionCollection',
+        'method' => 'isAutoTranslatable',
+    ],
+    'parameter_type' => 'standard',
+    'parameters' => [
+        [
+            'name' => 'object',
+            'type' => 'object',
+            'required' => true,
+            'default' => false,
+        ]
+    ],
+];
 
 
 

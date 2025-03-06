@@ -1,4 +1,4 @@
-{if $edit_language|eq('ita-IT')}
+{if and($edit_language|eq('ita-IT'), fetch('translate', 'is_auto_translatable', hash('object', $content_object)))}
 <li>
     <div class="form-check form-check-group pb-0 my-0 border-0" style="box-shadow:none">
         <div class="toggles">

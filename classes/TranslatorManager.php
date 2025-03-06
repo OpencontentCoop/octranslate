@@ -2,6 +2,8 @@
 
 class TranslatorManager
 {
+    use SiteDataStorageTrait;
+
     const PENDING_ACTION = 'octranslate';
 
     const TRANSLATOR_USERNAME_PREFIX = 'octranslate-';
@@ -16,6 +18,8 @@ class TranslatorManager
     private $isDocumentTranslationEnabled;
 
     private $defaultLanguage;
+
+    private $autoClassList;
 
     private function __construct()
     {
@@ -85,6 +89,33 @@ class TranslatorManager
         }
 
         return false;
+    }
+
+    public function canAutoTranslate(eZContentObject $object): bool
+    {
+        return
+            in_array('translation/automatic', $object->attribute('state_identifier_array'))
+            && $this->isAutoTranslatable($object);
+    }
+
+    public function isAutoTranslatable(eZContentObject $object): bool
+    {
+        return in_array($object->attribute('class_identifier'), $this->getAutoTranslatableClassList());
+    }
+
+    public function getAutoTranslatableClassList(): array
+    {
+        if ($this->autoClassList === null) {
+            $this->autoClassList = (array)json_decode($this->getStorage('octranslate_auto_class_list'), true);
+        }
+
+        return $this->autoClassList;
+    }
+
+    public function setAutoTranslatableClassList(array $classList): void
+    {
+        $this->setStorage('octranslate_auto_class_list', json_encode($classList));
+        $this->autoClassList = null;
     }
 
     public function addPendingTranslations(eZContentObject $object, $skipAlreadyTranslated = true)
@@ -163,6 +194,9 @@ class TranslatorManager
                 ),
                 __METHOD__
             );
+        } else {
+            $pending->setAttribute('created', time());
+            $pending->store();
         }
 
         return $pending;
@@ -527,5 +561,62 @@ class TranslatorManager
         }
         ksort($serialized);
         return md5(json_encode($serialized));
+    }
+
+    public static function processPendingAction(eZPendingActions $entry, eZCLI $cli = null): array
+    {
+        $result = false;
+        $error = null;
+        $params = $entry->attribute('param');
+        $decodedParams = json_decode($params, true);
+        try {
+        $object = eZContentObject::fetch((int)$decodedParams['id']);
+        $sourceLanguage = $decodedParams['from'];
+        $targetLanguage = $decodedParams['to'];
+        if ($object instanceof eZContentObject
+            && eZContentLanguage::idByLocale($sourceLanguage)
+            && eZContentLanguage::idByLocale($targetLanguage)) {
+            if ($cli instanceof eZCLI) {
+                $cli->output(
+                    sprintf(
+                        'Translate object %s from %s to %s',
+                        $object->attribute('id'),
+                        $sourceLanguage,
+                        $targetLanguage
+                    )
+                );
+            }
+            try {
+                $result = TranslatorManager::instance()->createAndPublishTranslation(
+                    $object,
+                    $sourceLanguage,
+                    $targetLanguage
+                );
+            } catch (RuntimeException $e) {
+                eZDebug::writeError($e->getMessage(), __METHOD__);
+                if ($cli) {
+                    $cli->error($e->getMessage());
+                }
+                $error = $e->getMessage();
+            }
+        } else {
+            eZDebug::writeError('Invalid parameters', __METHOD__);
+            if ($cli instanceof eZCLI) {
+                $cli->error('Invalid parameters');
+            }
+            $error = 'Invalid parameters';
+        }
+        eZPendingActions::removeByAction(
+            TranslatorManager::PENDING_ACTION,
+            ['param' => $params]
+        );
+        } catch (Throwable $e) {
+            if ($cli instanceof eZCLI) {
+                $cli->error('Recoverable error: ' . $e->getMessage());
+            }
+            $error = $e->getMessage();
+        }
+
+        return ['result' => $result, 'error' => $error];
     }
 }

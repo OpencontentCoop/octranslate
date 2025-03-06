@@ -18,6 +18,7 @@ class TranslatorHandlerConnector extends AbstractBaseConnector
     {
         $settings = TranslatorManager::instance()->getHandler()->getSettings();
         $settings['_pending'] = TranslatorManager::instance()->countPendingActions();
+        $settings['_auto_class_list'] = TranslatorManager::instance()->getAutoTranslatableClassList();
         return $settings;
     }
 
@@ -26,10 +27,30 @@ class TranslatorHandlerConnector extends AbstractBaseConnector
         $schema = TranslatorManager::instance()->getHandler()->getSettingsSchema();
         $schema['properties']['_pending'] = [
             "type" => "string",
-            "title" => "Pending translations",
+            "title" => "<a href=\"/translate/pending\">Pending translations</a>",
             "readonly" => true,
         ];
+        $schema['properties']['_auto_class_list'] = [
+            'type' => 'array',
+            'title' => 'Auto translate class list',
+            'enum' => array_keys($this->getClassHash()),
+        ];
         return $schema;
+    }
+
+    private function getClassHash(): array
+    {
+        $classes = json_decode(
+            json_encode((new \Opencontent\Opendata\Api\ClassRepository())->listAll()),
+        true
+        );
+
+        return array_combine(
+            array_column($classes, 'identifier'),
+            array_map(function($item){
+                return $item['nameList'][eZLocale::currentLocaleCode()] ?? $item['name'];
+            }, $classes)
+        );
     }
 
     protected function getOptions()
@@ -42,6 +63,11 @@ class TranslatorHandlerConnector extends AbstractBaseConnector
                     'enctype' => 'multipart/form-data',
                 ],
             ],
+        ];
+        $options['fields']['_auto_class_list'] = [
+            'multiple' => true,
+            'type' => 'checkbox',
+            'optionLabels' => array_values($this->getClassHash())
         ];
         return $options;
     }
@@ -56,8 +82,11 @@ class TranslatorHandlerConnector extends AbstractBaseConnector
 
     protected function submit()
     {
-        unset($_POST['_pending']);
-        TranslatorManager::instance()->getHandler()->storeSettings($_POST);
+        $data = $_POST;
+        unset($data['_pending']);
+        TranslatorManager::instance()->setAutoTranslatableClassList($data['_auto_class_list'] ?? []);
+        unset($data['_auto_class_list']);
+        TranslatorManager::instance()->getHandler()->storeSettings($data);
         return true;
     }
 
