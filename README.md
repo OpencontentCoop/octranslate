@@ -1,5 +1,11 @@
 # Translation tools for OpenCity CMS
 
+## Come funziona questo tool?
+todo
+
+## Come creare un handler di traduzione?
+todo
+
 ## Sei un programmatore ed hai bisogno di aiuto?
 * Per segnalare malfunzionamenti utilizzare la funzionalità GitHub Issues di questo repository
 * Per richiedere l'assistenza di uno sviluppatore scrivere a info@opencontent.it

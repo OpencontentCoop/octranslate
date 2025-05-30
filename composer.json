@@ -1,7 +1,7 @@
 {
   "name": "opencontent/octranslate",
   "type": "ezpublish-legacy-extension",
-  "description": "Translation tools for OpenCity CMS (embed a deeplcom/deepl-php php-7.2 porting)",
+  "description": "Translation tools for OpenCity CMS",
   "require": {
     "psr/log": "^1.1 || ^2.0 || ^3.0",
     "psr/http-client": "^1.0",

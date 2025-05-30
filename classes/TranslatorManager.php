@@ -23,7 +23,9 @@ class TranslatorManager
 
     private function __construct()
     {
-        $this->handler = new DeeplTranslatorHandler();
+        $handlerClassName = eZINI::instance('octranslate.ini')
+            ->variable('Settings', 'HandlerClassName');
+        $this->handler = new $handlerClassName();
         $this->isDocumentTranslationEnabled = false;
         $this->defaultLanguage = 'ita-IT';
     }
@@ -333,6 +335,28 @@ class TranslatorManager
                     }
                     break;
 
+                case eZPageType::DATA_TYPE_STRING:
+                    /** @var eZPage $ezPage */
+                    $source = $attribute->attribute('data_text');
+                    $page = eZPage::createFromXML($source);
+                    /** @var eZPageZone $zone */
+                    foreach ($page->attribute('zones') as $zone) {
+                        /** @var eZPageBlock[] $blocks */
+                        $blocks = (array)$zone->attribute('blocks');
+                        foreach ($blocks as $block) {
+                            $blockIdentifier = implode('#', [
+                                $identifier,
+                                $zone->attribute('id'),
+                                $block->attribute('id'),
+                                'name'
+                            ]);
+                            if (!empty($block->attribute('name'))) {
+                                $toTranslate['string'][$blockIdentifier] = $block->attribute('name');
+                            }
+                        }
+                    }
+                    break;
+
                 default:
                     $untranslated[$identifier] = $attribute->toString();
             }
@@ -427,6 +451,30 @@ class TranslatorManager
                 case OCMultiBinaryType::DATA_TYPE_STRING:
                     $key = $this->getKeyIndex($identifier, $toTranslate['file']);
                     $translatedDataMap[$identifier] = implode('|', $translated['file'][$key]);
+
+                    break;
+                case eZPageType::DATA_TYPE_STRING:
+                    /** @var eZPage $ezPage */
+                    $source = $attribute->attribute('data_text');
+                    $page = eZPage::createFromXML($source);
+                    /** @var eZPageZone $zone */
+                    foreach ($page->attribute('zones') as $zone) {
+                        /** @var eZPageBlock[] $blocks */
+                        $blocks = (array)$zone->attribute('blocks');
+                        foreach ($blocks as $block) {
+                            $blockIdentifier = implode('#', [
+                                $identifier,
+                                $zone->attribute('id'),
+                                $block->attribute('id'),
+                                'name'
+                            ]);
+                            if (!empty($block->attribute('name'))) {
+                                $key = $this->getKeyIndex($blockIdentifier, $toTranslate['string']);
+                                $block->setAttribute('name', (string)$translated['string'][$key]);
+                            }
+                        }
+                        $translatedDataMap[$identifier] = $page->toXML();
+                    }
                     break;
 
                 default:

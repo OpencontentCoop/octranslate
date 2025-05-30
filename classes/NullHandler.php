@@ -1,10 +1,10 @@
 <?php
 
-class ModernMTTranslatorHandler implements TranslatorHandlerInterface
+class NullHandler implements TranslatorHandlerInterface
 {
     public function getIdentifier(): string
     {
-        return 'modernmtt';
+        return 'null';
     }
 
     public function getSettingsSchema(): array
@@ -34,4 +34,5 @@ class ModernMTTranslatorHandler implements TranslatorHandlerInterface
     {
         return false;
     }
+
 }
