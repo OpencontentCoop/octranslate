@@ -12,13 +12,17 @@ $script = eZScript::instance([
 $script->startup();
 
 $options = $script->getOptions(
-    '[class:]',
+    '[class:][override]',
     '',
-    ['class' => 'Identificatore della classe']
+    [
+        'class' => 'Identificatore della classe',
+        'override' => 'Sovrascrive traduzioni esistenti',
+    ]
 );
 $script->initialize();
 $script->setUseDebugAccumulators(true);
 
+$override = $options['override'];
 
 try {
     if (isset($options['class'])) {
@@ -53,7 +57,7 @@ try {
             $progressBar->advance();
             $object = eZContentObject::fetch((int)$row['id']);
             if ($object instanceof eZContentObject) {
-                TranslatorManager::instance()->addPendingTranslations($object);
+                TranslatorManager::instance()->addPendingTranslations($object, !$override);
             }
 
         }
