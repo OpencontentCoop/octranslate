@@ -3,7 +3,7 @@
 require 'autoload.php';
 
 $script = eZScript::instance([
-    'description' => ("Reindicizza\n\n"),
+    'description' => ("\n\n"),
     'use-session' => false,
     'use-modules' => true,
     'use-extensions' => true,
@@ -39,10 +39,8 @@ try {
         throw new Exception("Contenuto $contentId non trovato");
     }
 
-    $actions = TranslatorManager::instance()->addPendingTranslations($object, !$override);
-    foreach ($actions as $action) {
-        TranslatorManager::processPendingAction($action, $cli);
-    }
+    $total = TranslatorManager::instance()->doEstimateCharactersCount($object);
+    $cli->warning('Estimate character count: ' . $total);
 
     $script->shutdown();
 } catch (Exception $e) {

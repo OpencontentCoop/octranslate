@@ -12,17 +12,16 @@ $script = eZScript::instance([
 $script->startup();
 
 $options = $script->getOptions(
-    '[class:][override]',
+    '[class:]',
     '',
     [
         'class' => 'Identificatore della classe',
-        'override' => 'Sovrascrive traduzioni esistenti',
     ]
 );
 $script->initialize();
 $script->setUseDebugAccumulators(true);
 
-$override = $options['override'];
+$cli = eZCLI::instance();
 
 try {
     if (isset($options['class'])) {
@@ -45,9 +44,9 @@ try {
         false
     );
 
+    $total = 0;
     $count = count($objects);
     if ($count > 0) {
-
         $output = new ezcConsoleOutput();
         $progressBarOptions = ['emptyChar' => ' ', 'barChar' => '='];
         $progressBar = new ezcConsoleProgressbar($output, $count, $progressBarOptions);
@@ -57,13 +56,17 @@ try {
             $progressBar->advance();
             $object = eZContentObject::fetch((int)$row['id']);
             if ($object instanceof eZContentObject) {
-                TranslatorManager::instance()->addPendingTranslations($object, !$override);
+                $partial = TranslatorManager::instance()->doEstimateCharactersCount($object);
+                $total += $partial;
                 eZContentObject::clearCache();
             }
 
         }
         $progressBar->finish();
     }
+
+    $cli->output('Content count: ' . $count);
+    $cli->warning('Estimate character count: ' . $total);
 
     $script->shutdown();
 } catch (Exception $e) {
