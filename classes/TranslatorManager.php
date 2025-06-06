@@ -529,6 +529,13 @@ class TranslatorManager
             if (!$attribute->hasContent()) {
                 continue;
             }
+            if ($attribute->attribute('is_information_collector')) {
+                continue;
+            }
+            if (!$attribute->attribute('can_translate')) {
+                $untranslated[$identifier] = $attribute->toString();
+                continue;
+            }
             switch ($attribute->attribute('data_type_string')) {
                 case eZStringType::DATA_TYPE_STRING:
                 case eZTextType::DATA_TYPE_STRING:
