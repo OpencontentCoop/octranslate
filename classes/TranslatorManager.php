@@ -481,6 +481,29 @@ class TranslatorManager
                     }
                     break;
 
+                case eZImageType::DATA_TYPE_STRING:
+                    $string = $attribute->toString();
+                    $delimiterPos = strpos( $string, '|' );
+                    if ($delimiterPos === false) {
+                        $filepath = $string;
+                        $alternativeText = '';
+                    } else {
+                        $filepath = substr($string, 0, $delimiterPos);
+                        $alternativeText = substr($string, $delimiterPos + 1);
+                    }
+                    $tempFilename = basename($filepath);
+                    $tempDirectory = eZSys::cacheDirectory() . '/' . eZINI::instance('image.ini')->variable(
+                            'FileSettings',
+                            'TemporaryDir'
+                        );
+                    eZFile::create(
+                        $tempFilename,
+                        $tempDirectory,
+                        eZClusterFileHandler::instance($filepath)->fetchContents()
+                    );
+                    $translatedDataMap[$identifier] = "$tempDirectory/$tempFilename|$alternativeText";
+                    break;
+
                 default:
                     $translatedDataMap[$identifier] = $untranslated[$identifier];
             }
