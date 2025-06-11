@@ -12,10 +12,11 @@ $script = eZScript::instance([
 $script->startup();
 
 $options = $script->getOptions(
-    '[class:][override]',
+    '[class:][subtree:][override]',
     '',
     [
         'class' => 'Identificatore della classe',
+        'subtree' => 'Nodo contenitore',
         'override' => 'Sovrascrive traduzioni esistenti',
     ]
 );
@@ -23,6 +24,7 @@ $script->initialize();
 $script->setUseDebugAccumulators(true);
 
 $override = $options['override'];
+$cli = eZCLI::instance();
 
 try {
     if (isset($options['class'])) {
@@ -36,16 +38,20 @@ try {
         throw new Exception("Classe $classIdentifier non trovata");
     }
 
-    $objects = eZPersistentObject::fetchObjectList(
-        eZContentObject::definition(),
-        ['id'],
-        ['contentclass_id' => $class->attribute('id')],
-        null,
-        null,
-        false
-    );
+    $parentNodeId = (int)$options['subtree'];
+    if ($parentNodeId === 0){
+        $parentNodeId = 1;
+    }
 
-    $count = count($objects);
+    /** @var eZContentObjectTreeNode[] $list */
+    $list = eZContentObjectTreeNode::subTreeByNodeID([
+        'ClassFilterType' => 'include',
+        'ClassFilterArray' => [$classIdentifier],
+        'MainNodeOnly' => true,
+        'SortBy' => ['contentobject_id', true],
+    ], $parentNodeId);
+
+    $count = count($list);
     if ($count > 0) {
 
         $output = new ezcConsoleOutput();
@@ -53,9 +59,9 @@ try {
         $progressBar = new ezcConsoleProgressbar($output, $count, $progressBarOptions);
         $progressBar->start();
 
-        foreach ($objects as $row) {
+        foreach ($list as $node) {
             $progressBar->advance();
-            $object = eZContentObject::fetch((int)$row['id']);
+            $object = $node->object();
             if ($object instanceof eZContentObject) {
                 TranslatorManager::instance()->addPendingTranslations($object, !$override);
                 eZContentObject::clearCache();
@@ -63,6 +69,7 @@ try {
 
         }
         $progressBar->finish();
+        $cli->output();
     }
 
     $script->shutdown();

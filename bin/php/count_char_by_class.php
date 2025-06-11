@@ -16,6 +16,7 @@ $options = $script->getOptions(
     '',
     [
         'class' => 'Identificatore della classe',
+        'subtree' => 'Nodo contenitore',
     ]
 );
 $script->initialize();
@@ -35,26 +36,30 @@ try {
         throw new Exception("Classe $classIdentifier non trovata");
     }
 
-    $objects = eZPersistentObject::fetchObjectList(
-        eZContentObject::definition(),
-        ['id'],
-        ['contentclass_id' => $class->attribute('id')],
-        null,
-        null,
-        false
-    );
+    $parentNodeId = (int)$options['subtree'];
+    if ($parentNodeId === 0){
+        $parentNodeId = 1;
+    }
+
+    /** @var eZContentObjectTreeNode[] $list */
+    $list = eZContentObjectTreeNode::subTreeByNodeID([
+        'ClassFilterType' => 'include',
+        'ClassFilterArray' => [$classIdentifier],
+        'MainNodeOnly' => true,
+        'SortBy' => ['contentobject_id', true],
+    ], $parentNodeId);
 
     $total = 0;
-    $count = count($objects);
+    $count = count($list);
     if ($count > 0) {
         $output = new ezcConsoleOutput();
         $progressBarOptions = ['emptyChar' => ' ', 'barChar' => '='];
         $progressBar = new ezcConsoleProgressbar($output, $count, $progressBarOptions);
         $progressBar->start();
 
-        foreach ($objects as $row) {
+        foreach ($list as $node) {
             $progressBar->advance();
-            $object = eZContentObject::fetch((int)$row['id']);
+            $object = $node->object();
             if ($object instanceof eZContentObject) {
                 $partial = TranslatorManager::instance()->doEstimateCharactersCount($object);
                 $total += $partial;
@@ -63,6 +68,7 @@ try {
 
         }
         $progressBar->finish();
+        $cli->output();
     }
 
     $cli->output('Content count: ' . $count);

@@ -3,7 +3,7 @@
 require 'autoload.php';
 
 $script = eZScript::instance([
-    'description' => ("Reindicizza\n\n"),
+    'description' => ("\n\n"),
     'use-session' => false,
     'use-modules' => true,
     'use-extensions' => true,
