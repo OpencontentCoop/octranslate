@@ -4,8 +4,14 @@
 
 /** @var eZCLI $cli */
 
-$limit = 50;
-$entries = eZPendingActions::fetchByAction(TranslatorManager::PENDING_ACTION);
+$limit = 500;
+$entries = eZPendingActions::fetchObjectList(
+    eZPendingActions::definition(),
+    null,
+    ['action' => TranslatorManager::PENDING_ACTION],
+    ['id' => 'asc'],
+    ['offset' => 0, 'limit' => $limit]
+);
 
 if (!empty($entries)) {
     if (!$isQuiet) {
