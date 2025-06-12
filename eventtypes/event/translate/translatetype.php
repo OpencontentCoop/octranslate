@@ -19,7 +19,7 @@ class TranslateType extends eZWorkflowEventType
         $object = eZContentObject::fetch($objectID);
         if ($object instanceof eZContentObject
             && TranslatorManager::instance()->canAutoTranslate($object)) {
-            TranslatorManager::instance()->addPendingTranslations($object);
+            TranslatorManager::instance()->addPendingTranslations($object, false);
         }
 
         return eZWorkflowType::STATUS_ACCEPTED;
