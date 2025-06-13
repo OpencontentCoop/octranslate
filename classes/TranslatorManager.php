@@ -6,6 +6,8 @@ class TranslatorManager
 
     const PENDING_ACTION = 'octranslate';
 
+    const FAIL_ACTION = 'octranslate_fail';
+
     private static $instance;
 
     /**
@@ -483,7 +485,7 @@ class TranslatorManager
 
                 case eZImageType::DATA_TYPE_STRING:
                     $string = $attribute->toString();
-                    $delimiterPos = strpos( $string, '|' );
+                    $delimiterPos = strpos($string, '|');
                     if ($delimiterPos === false) {
                         $filepath = $string;
                         $alternativeText = '';
@@ -812,6 +814,13 @@ class TranslatorManager
                 $cli->error('Recoverable error: ' . $e->getMessage());
             }
             $error = $e->getMessage();
+            $failedParams = $decodedParams;
+            $failedParams['error'] = $error;
+            $failedParams['executed'] = time();
+
+            $entry->setAttribute('action', self::FAIL_ACTION);
+            $entry->setAttribute('param', json_encode($failedParams));
+            $entry->store();
         }
 
         return ['result' => $result, 'error' => $error];
