@@ -23,6 +23,9 @@ $options = $script->getOptions(
 $script->initialize();
 $script->setUseDebugAccumulators(true);
 
+$admin = eZUser::fetchByName('admin');
+eZUser::setCurrentlyLoggedInUser($admin, $admin->attribute('contentobject_id'));
+
 $override = $options['override'];
 $cli = eZCLI::instance();
 

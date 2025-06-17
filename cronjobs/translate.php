@@ -4,6 +4,9 @@
 
 /** @var eZCLI $cli */
 
+$admin = eZUser::fetchByName('admin');
+eZUser::setCurrentlyLoggedInUser($admin, $admin->attribute('contentobject_id'));
+
 $limit = 500;
 $entries = eZPendingActions::fetchObjectList(
     eZPendingActions::definition(),
