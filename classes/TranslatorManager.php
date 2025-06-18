@@ -51,10 +51,10 @@ class TranslatorManager
                         [$label, $query] = explode(':', $facet, 2);
                         $values[] = $label;
                     }
-                    return implode('|', $values);
+                    return implode(' _ ', $values);
                 },
                 'parseTranslated' => function ($block, $original, $translated, $sourceLanguage, $targetLanguage) {
-                    $translatedLabels = explode('|', $translated);
+                    $translatedLabels = explode(' _ ', $translated);
                     $values = [];
                     $facets = explode(',', $original);
                     foreach ($facets as $index => $facet) {
@@ -440,7 +440,7 @@ class TranslatorManager
         $translated['xml'][-1] = '?';
         $translated['url'][-1] = '?';
         $translated['file'][-1] = '?';
-
+        
         $translatedDataMap = [];
         foreach ($dataMap as $identifier => $attribute) {
             if ($identifier === 'identifier') {
