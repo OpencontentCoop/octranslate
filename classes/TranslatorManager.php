@@ -21,7 +21,7 @@ class TranslatorManager
 
     private $autoClassList;
 
-    private $blockCustomAttributeIdentifiers = ['intro_text', 'show_all_text', 'input_search_placeholder', 'html'];
+    private $blockCustomAttributeIdentifiers;
 
     private function __construct()
     {
@@ -30,6 +30,64 @@ class TranslatorManager
         $this->handler = new $handlerClassName();
         $this->isDocumentTranslationEnabled = false;
         $this->defaultLanguage = 'ita-IT';
+        $defaultCustomAttributeTransformer = [
+            'prepareToTranslate' => function ($block, $original, $targetLanguage) {
+                return $original;
+            },
+            'parseTranslated' => function ($block, $original, $translated, $sourceLanguage, $targetLanguage) {
+                return $translated;
+            },
+        ];
+        $this->blockCustomAttributeIdentifiers = [
+            'intro_text' => $defaultCustomAttributeTransformer,
+            'show_all_text' => $defaultCustomAttributeTransformer,
+            'input_search_placeholder' => $defaultCustomAttributeTransformer,
+            'html' => $defaultCustomAttributeTransformer,
+            'facets' => [
+                'prepareToTranslate' => function ($block, $original, $targetLanguagel) {
+                    $values = [];
+                    $facets = explode(',', $original);
+                    foreach ($facets as $facet) {
+                        [$label, $query] = explode(':', $facet, 2);
+                        $values[] = $label;
+                    }
+                    return implode('|', $values);
+                },
+                'parseTranslated' => function ($block, $original, $translated, $sourceLanguage, $targetLanguage) {
+                    $translatedLabels = explode('|', $translated);
+                    $values = [];
+                    $facets = explode(',', $original);
+                    foreach ($facets as $index => $facet) {
+                        [$label, $query] = explode(':', $facet, 2);
+                        $values[] = str_replace($label, $translatedLabels[$index], $facet);
+                    }
+                    return implode(',', $values);
+                },
+            ],
+            'query' => [
+                'prepareToTranslate' => function ($block, $original, $targetLanguage) {
+                    return '';
+                },
+                'parseTranslated' => function ($block, $original, $translated, $sourceLanguage, $targetLanguage) {
+                    $custom = $block->attribute('custom_attributes');
+                    $customUrl = $custom['remote_url'] ?? null;
+                    if (!empty($custom['query']) && empty($customUrl)) {
+                        try {
+                            $queryOptimized = OCOpenDataQueries::getInstance()->optimize($original);
+                            return OCOpenDataQueries::getInstance()->translate(
+                                $queryOptimized,
+                                $sourceLanguage,
+                                $targetLanguage
+                            );
+                        } catch (Throwable $exception) {
+                            eZDebug::writeError($exception->getMessage(), __METHOD__);
+                        }
+                    }
+
+                    return $original;
+                },
+            ],
+        ];
     }
 
     public static function instance(): TranslatorManager
@@ -464,7 +522,7 @@ class TranslatorManager
                                 $block->setAttribute('name', (string)$translated['string'][$key]);
                             }
                             $customAttributes = $block->attribute('custom_attributes');
-                            foreach ($this->blockCustomAttributeIdentifiers as $customIdentifier) {
+                            foreach ($this->blockCustomAttributeIdentifiers as $customIdentifier => $callbacks) {
                                 if (!empty($customAttributes[$customIdentifier])) {
                                     $blockIdentifier = implode('#', [
                                         $identifier,
@@ -474,7 +532,13 @@ class TranslatorManager
                                         $customIdentifier,
                                     ]);
                                     $key = $this->getKeyIndex($blockIdentifier, $toTranslate['string']);
-                                    $customAttributes[$customIdentifier] = (string)$translated['string'][$key];
+                                    $customAttributes[$customIdentifier] = $callbacks['parseTranslated'](
+                                        $block,
+                                        $customAttributes[$customIdentifier],
+                                        (string)$translated['string'][$key],
+                                        $sourceLanguage,
+                                        $targetLanguage
+                                    );
                                 }
                             }
                             $block->setAttribute('custom_attributes', $customAttributes);
@@ -612,7 +676,7 @@ class TranslatorManager
                                 $toTranslate['string'][$blockIdentifier] = $block->attribute('name');
                             }
                             $customAttributes = $block->attribute('custom_attributes');
-                            foreach ($this->blockCustomAttributeIdentifiers as $customIdentifier) {
+                            foreach ($this->blockCustomAttributeIdentifiers as $customIdentifier => $callbacks) {
                                 if (!empty($customAttributes[$customIdentifier])) {
                                     $blockIdentifier = implode('#', [
                                         $identifier,
@@ -621,7 +685,11 @@ class TranslatorManager
                                         'custom_attributes',
                                         $customIdentifier,
                                     ]);
-                                    $toTranslate['string'][$blockIdentifier] = $customAttributes[$customIdentifier];
+                                    $toTranslate['string'][$blockIdentifier] = $callbacks['prepareToTranslate'](
+                                        $block,
+                                        $customAttributes[$customIdentifier],
+                                        $targetLanguage
+                                    );
                                 }
                             }
                         }
