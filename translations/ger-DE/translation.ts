@@ -35,11 +35,11 @@
     </message>
     <message>
       <source>Translate attachments</source>
-      <translation></translation>
+      <translation>Übersetzen Sie die angehängten Dateien</translation>
     </message>
     <message>
       <source>This content is translated with an automatic translation tool: the text may contain inaccurate information.</source>
-      <translation></translation>
+      <translation>Dieser Inhalt wurde mit einem automatischen Übersetzungstool übersetzt: Der Text kann ungenaue Informationen enthalten.</translation>
     </message>
   </context>
 </TS>
