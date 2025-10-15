@@ -23,6 +23,10 @@
                     <input name="ModifyTranslation" value="auto" type="radio" id="RegenerateTranslation">
                     <label for="RegenerateTranslation">{'Regenerate the translation automatically and edit the content for review'|i18n( 'octranslate')}</label>
                 </div>
+              <div class="form-check">
+                <input name="ModifyTranslation" value="auto-publish" type="radio" id="RegenerateAndPublishTranslation">
+                <label for="RegenerateAndPublishTranslation">{'Regenerate the translation automatically and publish it'|i18n( 'octranslate')}</label>
+              </div>
             {else}
                 <h3>{'Create a new %locale% translation for the selected content'|i18n( 'octranslate', , hash('%locale%', $to_language.name) )}</h3>
                 <p class="lead">{$object.name|wash()}</p>

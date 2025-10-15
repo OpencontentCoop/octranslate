@@ -47,6 +47,21 @@ try {
         $createDraft = false;
         if ($http->hasPostVariable('ModifyTranslation') && $translationAlreadyExits) {
             $createDraft = $http->postVariable('ModifyTranslation') === 'auto';
+            $createAndPublish = $http->postVariable('ModifyTranslation') === 'auto-publish';
+            if ($createAndPublish){
+                if ($translator->createAndPublishTranslation(
+                    $object,
+                    $sourceLanguage,
+                    $targetLanguage
+                )) {
+                    /** @var eZContentObjectTreeNode $mainNode */
+                    $mainNode = $object->mainNode();
+                    $module->redirectTo(TranslatorManager::getLocaleUrl($mainNode, $targetLanguage));
+                    return;
+                } else {
+                    return $module->handleError(eZError::KERNEL_NOT_AVAILABLE, 'kernel');
+                }
+            }
             if (!$createDraft) {
                 $module->redirectTo('content/edit/' . $object->attribute('id') . '/f/' . $targetLanguage);
                 return;

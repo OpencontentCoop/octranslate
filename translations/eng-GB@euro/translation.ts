@@ -40,5 +40,9 @@
       <source>This content is translated with an automatic translation tool: the text may contain inaccurate information.</source>
       <translation>This content is translated with an automatic translation tool: the text may contain inaccurate information.</translation>
     </message>
+    <message>
+      <source>Regenerate the translation automatically and publish it</source>
+      <translation>Regenerate the translation automatically and publish it</translation>
+    </message>
   </context>
 </TS>
