@@ -1,7 +1,7 @@
 publiccodeYmlVersion: 0.4.0
 name: Strumento traduzione automatica per Opencity Italia
 applicationSuite: Opencity Italia
-url: https://github.com/ProvinciaAutonomaTrento/Strumento-Traduzione-Automatica
+url: https://github.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web
 isBasedOn: https://github.com/OpencontentCoop/octranslate
 softwareVersion: 1.0.0
 releaseDate: 2025-10-15
