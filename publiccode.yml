@@ -3,7 +3,7 @@ name: Strumento traduzione automatica per Opencity Italia
 applicationSuite: Opencity Italia
 url: https://github.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web
 isBasedOn: https://github.com/OpencontentCoop/octranslate
-softwareVersion: 1.0.0
+softwareVersion: 1.2.1
 releaseDate: 2025-10-15
 logo: https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/logo-pat.png
 platforms:
