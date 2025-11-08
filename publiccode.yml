@@ -1,23 +1,26 @@
-publiccodeYmlVersion: 0.4.0
+publiccodeYmlVersion: 0.5.0
 name: Strumento traduzione automatica per Opencity Italia
 applicationSuite: Opencity Italia
 url: https://github.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web
 isBasedOn: https://github.com/OpencontentCoop/octranslate
 softwareVersion: 1.0.0
 releaseDate: 2025-10-15
-logo: images/opencity-italia.png
+logo: https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/logo-pat.png
 platforms:
   - web
 categories:
   - content-management
   - translation
+organisation:
+    name: OpenCity Labs srl
+    uri: https://www.opencityitalia.it/
 usedBy:
   - Provincia autonoma di Trento
 developmentStatus: stable
 softwareType: standalone/web
 intendedAudience:
   countries:
-    - it
+    - IT
   scope:
     - local-authorities
     - government
@@ -47,7 +50,7 @@ description:
       Per i contenuti che non sono stati tradotti automaticamente, il redattore
       abilitato ha comunque la possibilità di avviare manualmente la traduzione,
       selezionando la lingua desiderata dal menu dedicato.
-    documentation: https://docs.opencithttps://docs.opencityitalia.it/redattori/moduli-integrativi-della-piattaforma/tradurre-i-contenuti-del-sito/traduzione-automatica-dei-contenuti?UTM_SOURCE=pat-public-code
+    documentation: https://docs.opencityitalia.it/redattori/moduli-integrativi-della-piattaforma/tradurre-i-contenuti-del-sito/traduzione-automatica-dei-contenuti?UTM_SOURCE=pat-public-code
     features:
       - Traduzione automatica dei contenuti per siti web Opencity Italia
       - Integrazione con strumenti di traduzione esteri DeepL via API
@@ -55,13 +58,12 @@ description:
         revisione da parte dei redattori
       - Scelta granulare dei contenuti per cui attivare la traduzione automatica
     screenshots:
-      - images/traduzione-01.png
-      - images/traduzione-02.png
-      - images/traduzione-03.png
+      - https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/traduzione-01.png
+      - https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/traduzione-02.png
+      - https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/traduzione-03.png
 legal:
   license: LGPL-2.0-only
   mainCopyrightOwner: Provincia autonoma di Trento
-  repoOwner: OpenCity Labs srl
 maintenance:
   type: community
   contacts:
@@ -82,14 +84,8 @@ dependsOn:
   open:
     - name: Modello di sito web provinciale e regionale
       version: 1.1.0
-
-it:
+IT:
   countryExtensionVersion: "1.0"
-  conforme:
-    lineeGuidaDesign: true
-    modelloInteroperabilita: true
-    misureMinimeSicurezza: true
-    gdpr: true
   piattaforme:
     spid: false
     cie: false
