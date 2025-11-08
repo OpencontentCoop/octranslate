@@ -8,7 +8,7 @@ $Module = [
 $ViewList = [];
 
 $ViewList['content'] = [
-    'functions' => ['translate'],
+    'functions' => ['content'],
     'script' => 'content.php',
     'params' => ['Id', 'From', 'To'],
     'unordered_params' => [],
@@ -22,7 +22,7 @@ $ViewList['settings'] = [
 ];
 
 $ViewList['set-mode'] = [
-    'functions' => ['translate'],
+    'functions' => ['content'],
     'script' => 'set-mode.php',
     'params' => ['Action', 'Parameter'],
     'unordered_params' => [],
@@ -35,5 +35,5 @@ $ViewList['pending'] = [
     'unordered_params' => ["offset" => "Offset"],
 ];
 
-$FunctionList['translate'] = [];
+$FunctionList['content'] = [];
 $FunctionList['settings'] = [];
