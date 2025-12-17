@@ -2,7 +2,6 @@ publiccodeYmlVersion: 0.5.0
 name: Strumento traduzione automatica per Opencity Italia
 applicationSuite: Opencity Italia
 url: https://github.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web
-isBasedOn: https://github.com/OpencontentCoop/octranslate
 softwareVersion: 1.2.1
 releaseDate: 2025-10-15
 logo: https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/logo-pat.png
@@ -58,6 +57,7 @@ description:
         revisione da parte dei redattori
       - Scelta granulare dei contenuti per cui attivare la traduzione automatica
     screenshots:
+      - https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/traduzione-00.png
       - https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/traduzione-01.png
       - https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/traduzione-02.png
       - https://raw.githubusercontent.com/ProvinciaAutonomaTrento/Traduzione-automatica-sito-web/main/images/traduzione-03.png
@@ -86,6 +86,12 @@ dependsOn:
       version: 1.1.0
 IT:
   countryExtensionVersion: "1.0"
+  conforme:
+    lineeGuidaDesign: true
+    modelloInteroperabilita: true
+    misureMinimeSicurezza: true
+    gdpr: true  
+
   piattaforme:
     spid: false
     cie: false
