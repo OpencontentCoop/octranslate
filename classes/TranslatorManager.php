@@ -451,6 +451,10 @@ class TranslatorManager
                 $translatedDataMap[$identifier] = '';
                 continue;
             }
+            if (!$attribute->attribute('can_translate')) {
+                $translatedDataMap[$identifier] = $untranslated[$identifier];
+                continue;
+            }
             switch ($attribute->attribute('data_type_string')) {
                 case eZStringType::DATA_TYPE_STRING:
                 case eZTextType::DATA_TYPE_STRING:
