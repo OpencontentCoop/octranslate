@@ -602,36 +602,42 @@ class TranslatorManager
             if ($attribute->attribute('is_information_collector')) {
                 continue;
             }
-            if (!$attribute->attribute('can_translate')) {
-                $untranslated[$identifier] = $attribute->toString();
-                continue;
-            }
             switch ($attribute->attribute('data_type_string')) {
                 case eZStringType::DATA_TYPE_STRING:
                 case eZTextType::DATA_TYPE_STRING:
-                    $toTranslate['string'][$identifier] = $attribute->toString();
+                    if ($attribute->attribute('can_translate')) {
+                        $toTranslate['string'][$identifier] = $attribute->toString();
+                    }
                     break;
 
                 case eZMatrixType::DATA_TYPE_STRING:
-                    $toTranslate['xml'][$identifier] = $attribute->attribute('data_text');
+                    if ($attribute->attribute('can_translate')) {
+                        $toTranslate['xml'][$identifier] = $attribute->attribute('data_text');
+                    }
                     break;
 
                 case eZXMLTextType::DATA_TYPE_STRING:
-                    $toTranslate['xml'][$identifier] = $attribute->toString();
+                    if ($attribute->attribute('can_translate')) {
+                        $toTranslate['xml'][$identifier] = $attribute->toString();
+                    }
                     break;
 
                 case eZURLType::DATA_TYPE_STRING:
-                    $label = $attribute->attribute('data_text');
-                    if (!empty($label)) {
-                        $toTranslate['url'][$identifier] = $label;
+                    if ($attribute->attribute('can_translate')) {
+                        $label = $attribute->attribute('data_text');
+                        if (!empty($label)) {
+                            $toTranslate['url'][$identifier] = $label;
+                        }
                     }
                     break;
 
                 case eZObjectRelationType::DATA_TYPE_STRING:
                 case eZObjectRelationListType::DATA_TYPE_STRING:
-                    foreach (explode('-', $attribute->toString()) as $relationId) {
-                        $toTranslate['relation'][$identifier][] = $relationId;
-                        $toTranslate['relation'][$identifier] = array_unique($toTranslate['relation'][$identifier]);
+                    if ($attribute->attribute('can_translate')) {
+                        foreach (explode('-', $attribute->toString()) as $relationId) {
+                            $toTranslate['relation'][$identifier][] = $relationId;
+                            $toTranslate['relation'][$identifier] = array_unique($toTranslate['relation'][$identifier]);
+                        }
                     }
                     break;
 
@@ -648,7 +654,24 @@ class TranslatorManager
                 case eZBinaryFileType::DATA_TYPE_STRING:
                     $file = $attribute->content();
                     if ($file instanceof eZBinaryFile) {
-                        $toTranslate['file'][$identifier][] = $file;
+                        if ($attribute->attribute('can_translate')) {
+                            $toTranslate['file'][$identifier][] = $file;
+                        } else {
+                            $fileInfo = $file->storedFileInfo();
+                            $tempDirectory = eZSys::cacheDirectory() . '/' .
+                                eZINI::instance('image.ini')->variable(
+                                    'FileSettings',
+                                    'TemporaryDir'
+                                );
+                            eZDir::mkdir($tempDirectory);
+                            $tempFilename = $fileInfo['original_filename'];
+                            eZFile::create(
+                                $tempFilename,
+                                $tempDirectory,
+                                eZClusterFileHandler::instance($fileInfo['filepath'])->fetchContents()
+                            );
+                            $untranslated[$identifier] = "$tempDirectory/$tempFilename";
+                        }
                     }
                     break;
 
@@ -656,44 +679,48 @@ class TranslatorManager
                     $files = $attribute->content();
                     foreach ($files as $file) {
                         if ($file instanceof eZBinaryFile) {
-                            $toTranslate['file'][$identifier][] = $file;
+                            if ($attribute->attribute('can_translate')) {
+                                $toTranslate['file'][$identifier][] = $file;
+                            }
                         }
                     }
                     break;
 
                 case eZPageType::DATA_TYPE_STRING:
-                    /** @var eZPage $ezPage */
-                    $source = $attribute->attribute('data_text');
-                    $page = eZPage::createFromXML($source);
-                    /** @var eZPageZone $zone */
-                    foreach ($page->attribute('zones') as $zone) {
-                        /** @var eZPageBlock[] $blocks */
-                        $blocks = (array)$zone->attribute('blocks');
-                        foreach ($blocks as $block) {
-                            if (!empty($block->attribute('name'))) {
-                                $blockIdentifier = implode('#', [
-                                    $identifier,
-                                    $zone->attribute('id'),
-                                    $block->attribute('id'),
-                                    'name',
-                                ]);
-                                $toTranslate['string'][$blockIdentifier] = $block->attribute('name');
-                            }
-                            $customAttributes = $block->attribute('custom_attributes');
-                            foreach ($this->blockCustomAttributeIdentifiers as $customIdentifier => $callbacks) {
-                                if (!empty($customAttributes[$customIdentifier])) {
+                    if ($attribute->attribute('can_translate')) {
+                        /** @var eZPage $ezPage */
+                        $source = $attribute->attribute('data_text');
+                        $page = eZPage::createFromXML($source);
+                        /** @var eZPageZone $zone */
+                        foreach ($page->attribute('zones') as $zone) {
+                            /** @var eZPageBlock[] $blocks */
+                            $blocks = (array)$zone->attribute('blocks');
+                            foreach ($blocks as $block) {
+                                if (!empty($block->attribute('name'))) {
                                     $blockIdentifier = implode('#', [
                                         $identifier,
                                         $zone->attribute('id'),
                                         $block->attribute('id'),
-                                        'custom_attributes',
-                                        $customIdentifier,
+                                        'name',
                                     ]);
-                                    $toTranslate['string'][$blockIdentifier] = $callbacks['prepareToTranslate'](
-                                        $block,
-                                        $customAttributes[$customIdentifier],
-                                        $targetLanguage
-                                    );
+                                    $toTranslate['string'][$blockIdentifier] = $block->attribute('name');
+                                }
+                                $customAttributes = $block->attribute('custom_attributes');
+                                foreach ($this->blockCustomAttributeIdentifiers as $customIdentifier => $callbacks) {
+                                    if (!empty($customAttributes[$customIdentifier])) {
+                                        $blockIdentifier = implode('#', [
+                                            $identifier,
+                                            $zone->attribute('id'),
+                                            $block->attribute('id'),
+                                            'custom_attributes',
+                                            $customIdentifier,
+                                        ]);
+                                        $toTranslate['string'][$blockIdentifier] = $callbacks['prepareToTranslate'](
+                                            $block,
+                                            $customAttributes[$customIdentifier],
+                                            $targetLanguage
+                                        );
+                                    }
                                 }
                             }
                         }
