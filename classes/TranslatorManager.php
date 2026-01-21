@@ -203,7 +203,7 @@ class TranslatorManager
             'object_id' => $newVersion->attribute('contentobject_id'),
             'version' => $newVersion->attribute('version'),
         ]);
-
+        
         $this->storeVersionTranslatedHash($newVersion, $targetLanguage);
 
         if ($operationResult['status'] == eZModuleOperationInfo::STATUS_CONTINUE) {
@@ -923,5 +923,16 @@ class TranslatorManager
         }
 
         return ['result' => $result, 'error' => $error];
+    }
+
+    public function enqueueFailedAction(eZPendingActions $entry, eZCLI $cli = null): void
+    {
+        $params = $entry->attribute('param');
+        $decodedParams = json_decode($params, true);
+        $object = eZContentObject::fetch((int)$decodedParams['id']);
+        if ($object instanceof eZContentObject){
+            $this->appendPendingAction($object, $decodedParams['from'], $decodedParams['to']);
+            $entry->remove();
+        }
     }
 }

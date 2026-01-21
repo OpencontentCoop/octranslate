@@ -14,6 +14,25 @@ if ($http->hasPostVariable('EmptyError')){
     return;
 }
 
+if ($http->hasPostVariable('Retry')){
+    $failedList = $http->postVariable('FailedEntry', []);
+    $failedList = array_map('intval', $failedList);
+    $failedEntries = eZPersistentObject::fetchObjectList(
+        eZPendingActions::definition(),
+        null,
+        [
+            'id' => [$failedList],
+            'action' => TranslatorManager::FAIL_ACTION
+        ],
+        true
+    );
+    foreach ($failedEntries as $failedEntry) {
+        TranslatorManager::instance()->enqueueFailedAction($failedEntry);
+    }
+    $Module->redirectTo('/translate/pending');
+    return;
+}
+
 if ($http->hasPostVariable('Remove')) {
     $removeEntries = array_filter($http->postVariable('Entry'), 'intval');
     if (!empty($removeEntries)) {
