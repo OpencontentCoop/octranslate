@@ -49,7 +49,7 @@ description:
       Per i contenuti che non sono stati tradotti automaticamente, il redattore
       abilitato ha comunque la possibilità di avviare manualmente la traduzione,
       selezionando la lingua desiderata dal menu dedicato.
-    documentation: https://docs.opencityitalia.it/redattori/moduli-integrativi-della-piattaforma/tradurre-i-contenuti-del-sito/traduzione-automatica-dei-contenuti?UTM_SOURCE=pat-public-code
+    documentation: https://docs.opencityitalia.it/manuale-opencity-italia-sito-web-istituzionale-v3/moduli-integrativi-della-piattaforma/tradurre-i-contenuti-del-sito/traduzione-automatica-dei-contenuti?UTM_
     features:
       - Traduzione automatica dei contenuti per siti web Opencity Italia
       - Integrazione con strumenti di traduzione esteri DeepL via API
